@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProfileForm } from "@/components/profile-form"
+import Logout from "@/components/logout"
 
 export const metadata: Metadata = {
   title: "Profil - Dashboard",
@@ -107,6 +108,9 @@ export default async function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+          <div className="flex justify-center w-full">
+          <Logout/>
+          </div>
         </div>
       </div>
     </div>

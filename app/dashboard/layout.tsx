@@ -1,5 +1,9 @@
 import type React from "react"
+import Link from "next/link"
 import { MobileNav } from "@/components/mobile-nav"
+import { Button } from "@/components/ui/button"
+import { Bell } from "lucide-react"
+import NotificationMobile from "@/components/notification-mobile"
 
 export default function DashboardLayout({
   children,
@@ -8,39 +12,32 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 flex h-14 items-center border-b bg-background px-4">
-        <MobileNav />
-        <div className="flex items-center justify-center md:justify-start">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mr-2 h-6 w-6 text-emerald-600"
-          >
-            <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
-          </svg>
-          <span className="font-bold">Iuran Desa</span>
+      <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-background/95 backdrop-blur-sm px-4">
+        <div className="flex items-center mr-auto">
+          <Link href="/dashboard">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 mr-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5 text-primary"
+              >
+                <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
+              </svg>
+            </div>
+          </Link>
+          <Link href="/dashboard">
+            <span className="text-lg font-bold hidden sm:inline-block">Iuran Desa</span>
+          </Link>
         </div>
+        <NotificationMobile />
       </header>
-      <main className="flex-1">{children}</main>
-      <div className="fixed bottom-0 left-0 z-10 w-full border-t bg-background md:hidden">
-        <div className="flex h-16 items-center justify-around">
-          {[
-            { href: "/dashboard", icon: "home", label: "Beranda" },
-            { href: "/dashboard/contributions", icon: "list", label: "Iuran" },
-            { href: "/dashboard/history", icon: "history", label: "Riwayat" },
-            { href: "/dashboard/profile", icon: "user", label: "Profil" },
-          ].map((item) => (
-            <a key={item.href} href={item.href} className="flex flex-col items-center justify-center">
-              <span className="text-xs">{item.label}</span>
-            </a>
-          ))}
-        </div>
-      </div>
+        <MobileNav />
+      <main className="flex-1 pb-16 md:pb-0 px-1">{children}</main>
     </div>
   )
 }

@@ -1,41 +1,32 @@
 "use client"
 
-import * as React from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { signIn } from "next-auth/react"
+import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const formSchema = z.object({
   email: z.string().email({
-    message: "Email tidak valid.",
+    message: "Email tidak valid",
   }),
   password: z.string().min(6, {
-    message: "Password minimal 6 karakter.",
+    message: "Password minimal 6 karakter",
   }),
 })
 
 export function LoginForm() {
   const router = useRouter()
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const searchParams = useSearchParams()
-
-  // Check for error in URL (from NextAuth)
-  React.useEffect(() => {
-    const errorParam = searchParams?.get("error")
-    if (errorParam) {
-      setError("Login gagal. Email atau password salah.")
-    }
-  }, [searchParams])
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [showPassword, setShowPassword] = useState<boolean>(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,54 +41,35 @@ export function LoginForm() {
     setError(null)
 
     try {
-      console.log("Attempting login with:", values.email)
-
-      const response = await signIn("credentials", {
+      const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
         redirect: false,
       })
 
-      console.log("SignIn response:", response)
-
-      if (response?.error) {
-        setError("Email atau password salah.")
-        toast({
-          variant: "destructive",
-          title: "Login gagal",
-          description: "Email atau password salah.",
-        })
+      if (result?.error) {
+        setError("Email atau password salah")
+        setIsLoading(false)
         return
       }
-
-      toast({
-        title: "Login berhasil",
-        description: "Anda akan diarahkan ke dashboard.",
-      })
 
       router.refresh()
       router.push("/")
     } catch (error) {
-      console.error("Login error:", error)
-      setError("Terjadi kesalahan. Silakan coba lagi nanti.")
-      toast({
-        variant: "destructive",
-        title: "Terjadi kesalahan",
-        description: "Silakan coba lagi nanti.",
-      })
-    } finally {
+      setError("Terjadi kesalahan. Silakan coba lagi.")
       setIsLoading(false)
     }
   }
 
   return (
     <Form {...form}>
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {error && (
+          <Alert variant="destructive" className="bg-destructive/10 text-destructive border border-destructive/20">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <FormField
           control={form.control}
           name="email"
@@ -105,12 +77,16 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="nama@email.com" {...field} />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input placeholder="nama@email.com" {...field} className="pl-10 h-11" disabled={isLoading} />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="password"
@@ -118,14 +94,43 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="******" {...field} />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                    className="pl-10 pr-10 h-11"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Memproses..." : "Login"}
+
+        <Button
+          type="submit"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Memproses...
+            </>
+          ) : (
+            "Masuk"
+          )}
         </Button>
       </form>
     </Form>

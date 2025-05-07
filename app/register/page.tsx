@@ -1,11 +1,12 @@
-import type { Metadata } from "next"
-import Link from "next/link"
-import { RegisterForm } from "@/components/register-form"
+import type { Metadata } from "next";
+import Link from "next/link";
+import { RegisterForm } from "@/components/register-form";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Daftar - Dashboard Iuran Desa",
   description: "Daftar akun baru di Dashboard Iuran Desa",
-}
+};
 
 export default function RegisterPage() {
   return (
@@ -30,7 +31,8 @@ export default function RegisterPage() {
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              &ldquo;Aplikasi ini membantu kami mengelola iuran desa dengan lebih transparan dan efisien.&rdquo;
+              &ldquo;Aplikasi ini membantu kami mengelola iuran desa dengan
+              lebih transparan dan efisien.&rdquo;
             </p>
             <footer className="text-sm">Kepala Desa Sukamaju</footer>
           </blockquote>
@@ -39,18 +41,34 @@ export default function RegisterPage() {
       <div className="lg:p-8">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
           <div className="flex flex-col space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Daftar Akun Baru</h1>
-            <p className="text-sm text-muted-foreground">Masukkan data Anda untuk mendaftar</p>
+            <div className="relative z-20 flex items-center text-lg font-medium justify-center pb-4 pt-4">
+              <Image
+                src="/logo.png"
+                alt="Login Image"
+                width={150}
+                height={150}
+                className="relative z-20 mt-auto"
+              />
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Daftar Akun Baru
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Masukkan data Anda untuk mendaftar
+            </p>
           </div>
           <RegisterForm />
-          <p className="px-8 text-center text-sm text-muted-foreground">
+          <p className="px-8 text-center text-sm text-muted-foreground pb-5">
             Sudah memiliki akun?{" "}
-            <Link href="/login" className="underline underline-offset-4 hover:text-primary">
+            <Link
+              href="/login"
+              className="underline underline-offset-4 hover:text-primary"
+            >
               Login
             </Link>
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }

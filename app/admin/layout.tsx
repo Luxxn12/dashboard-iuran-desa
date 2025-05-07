@@ -1,5 +1,6 @@
 import type React from "react"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 export default function AdminLayout({
   children,
@@ -7,9 +8,11 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <AdminSidebar className="hidden w-64 md:block" />
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
