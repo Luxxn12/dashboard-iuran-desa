@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PaymentForm } from "@/components/payment-form"
+import { ResumePaymentButton } from "@/components/resume-payment-button"
 
 export const metadata: Metadata = {
   title: "Detail Program Iuran - Dashboard",
@@ -41,24 +42,17 @@ export default async function ContributionDetailPage({ params }: ContributionDet
     where: {
       userId: session.user.id,
       contributionId: params.id,
-      status: {
-        in: ["COMPLETED", "PENDING"],
-      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      transaction: true,
     },
   })
 
-  // Also check if there's a pending transaction
-  const pendingTransaction = existingPayment
-    ? await prisma.transaction.findFirst({
-        where: {
-          id: existingPayment.transactionId || "",
-          status: "PENDING",
-        },
-      })
-    : null
-
   const hasCompletedPayment = existingPayment?.status === "COMPLETED"
-  const hasPendingPayment = existingPayment?.status === "PENDING" && pendingTransaction
+  const hasPendingPayment = existingPayment?.status === "PENDING" && existingPayment.transaction?.status === "PENDING"
 
   const progress = (contribution.collectedAmount / contribution.targetAmount) * 100
   const isExpired = new Date(contribution.endDate) < new Date()
@@ -162,12 +156,18 @@ export default async function ContributionDetailPage({ params }: ContributionDet
                 </p>
               </div>
             ) : hasPendingPayment ? (
-              <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg text-center">
-                <p className="font-medium text-yellow-800 dark:text-yellow-300">Pembayaran Anda sedang diproses</p>
-                <p className="text-yellow-700 dark:text-yellow-400 mt-1">
-                  Anda memiliki pembayaran tertunda sebesar Rp {existingPayment?.amount.toLocaleString("id-ID")}.
-                  Silakan selesaikan pembayaran Anda.
-                </p>
+              <div className="space-y-4">
+                <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg text-center">
+                  <p className="font-medium text-yellow-800 dark:text-yellow-300">Pembayaran Anda sedang diproses</p>
+                  <p className="text-yellow-700 dark:text-yellow-400 mt-1">
+                    Anda memiliki pembayaran tertunda sebesar Rp {existingPayment?.amount.toLocaleString("id-ID")}.
+                  </p>
+                </div>
+                <ResumePaymentButton
+                  transactionId={existingPayment.transaction?.id || ""}
+                  amount={existingPayment.amount}
+                  contributionTitle={contribution.title}
+                />
               </div>
             ) : isActive ? (
               <PaymentForm contributionId={params.id} contributionTitle={contribution.title} />

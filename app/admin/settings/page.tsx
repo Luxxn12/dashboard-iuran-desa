@@ -73,7 +73,7 @@ export default async function SettingsPage() {
             <CardContent className="space-y-4">
               <div>
                 <h3 className="font-medium">Nama Aplikasi</h3>
-                <p>Dashboard Iuran Desa</p>
+                <p>IURAN DESA APPS</p>
               </div>
               <div>
                 <h3 className="font-medium">Versi</h3>
@@ -81,7 +81,7 @@ export default async function SettingsPage() {
               </div>
               <div>
                 <h3 className="font-medium">Kontak Dukungan</h3>
-                <p>dukungan@iurandesa.id</p>
+                <p>allukman.lukman99@gmail.com</p>
               </div>
             </CardContent>
           </Card>

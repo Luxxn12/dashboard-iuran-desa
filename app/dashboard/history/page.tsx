@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ResumePaymentButton } from "@/components/resume-payment-button"
 
 export const metadata: Metadata = {
   title: "Riwayat Pembayaran - Dashboard",
@@ -21,6 +22,13 @@ export default async function HistoryPage() {
       contribution: {
         select: {
           title: true,
+          id: true,
+        },
+      },
+      transaction: {
+        select: {
+          id: true,
+          status: true,
         },
       },
     },
@@ -44,43 +52,57 @@ export default async function HistoryPage() {
         <CardContent>
           {payments.length > 0 ? (
             <div className="space-y-4">
-              {payments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="space-y-1">
-                    <p className="font-medium">{payment.contribution.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(payment.createdAt).toLocaleDateString("id-ID", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                    <p className="text-sm">Metode: {payment.paymentMethod || "Pembayaran Langsung"}</p>
+              {payments.map((payment) => {
+                const isPending =
+                  payment.status === "PENDING" || (payment.transaction && payment.transaction.status === "PENDING")
+
+                return (
+                  <div key={payment.id} className="flex flex-col p-4 border rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3">
+                      <div className="space-y-1">
+                        <p className="font-medium">{payment.contribution.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(payment.createdAt).toLocaleDateString("id-ID", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                        <p className="text-sm">Metode: {payment.paymentMethod || "Pembayaran Langsung"}</p>
+                      </div>
+                      <div className="flex flex-col items-end mt-2 sm:mt-0">
+                        <p className="font-bold">Rp {payment.amount.toLocaleString("id-ID")}</p>
+                        <Badge
+                          className="mt-1"
+                          variant={
+                            payment.status === "COMPLETED"
+                              ? "success"
+                              : payment.status === "PENDING"
+                                ? "outline"
+                                : "destructive"
+                          }
+                        >
+                          {payment.status === "COMPLETED"
+                            ? "Berhasil"
+                            : payment.status === "PENDING"
+                              ? "Menunggu"
+                              : "Gagal"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {isPending && payment.transaction && (
+                      <div className="mt-2">
+                        <ResumePaymentButton
+                          transactionId={payment.transaction.id}
+                          amount={payment.amount}
+                          contributionTitle={payment.contribution.title}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex flex-col items-end mt-2 sm:mt-0">
-                    <p className="font-bold">Rp {payment.amount.toLocaleString("id-ID")}</p>
-                    <Badge
-                      className="mt-1"
-                      variant={
-                        payment.status === "COMPLETED"
-                          ? "success"
-                          : payment.status === "PENDING"
-                            ? "outline"
-                            : "destructive"
-                      }
-                    >
-                      {payment.status === "COMPLETED"
-                        ? "Berhasil"
-                        : payment.status === "PENDING"
-                          ? "Menunggu"
-                          : "Gagal"}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
