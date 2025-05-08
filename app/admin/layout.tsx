@@ -9,7 +9,7 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <AdminSidebar />
+      <AdminSidebar className="bg-[#1A6533] text-white" />
       <SidebarInset>
         <main className="flex-1 overflow-y-auto">{children}</main>
       </SidebarInset>

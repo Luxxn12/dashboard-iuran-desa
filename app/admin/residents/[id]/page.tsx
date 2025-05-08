@@ -124,7 +124,7 @@ export default async function ResidentDetailPage({ params }: ResidentDetailPageP
               </div>
               <div className="bg-muted p-4 rounded-lg text-center">
                 <p className="text-sm text-muted-foreground">Total Dibayarkan</p>
-                <p className="text-2xl font-bold">Rp {totalPaid._sum.amount?.toLocaleString("id-ID") || "0"}</p>
+                <p className="text-xl font-bold">Rp {totalPaid._sum.amount?.toLocaleString("id-ID") || "0"}</p>
               </div>
             </div>
           </CardContent>

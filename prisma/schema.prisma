@@ -11,17 +11,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
-  email         String    @unique
+  email         String         @unique
   password      String
-  role          Role      @default(RESIDENT)
+  role          Role           @default(RESIDENT)
   address       String?
   phoneNumber   String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   payments      Payment[]
   notifications Notification[]
+  transactions  Transaction[]  // Add this relation
 }
 
 enum Role {
@@ -30,17 +31,18 @@ enum Role {
 }
 
 model Contribution {
-  id              String    @id @default(cuid())
+  id              String             @id @default(cuid())
   title           String
   description     String
   targetAmount    Float
-  collectedAmount Float     @default(0)
+  collectedAmount Float              @default(0)
   startDate       DateTime
   endDate         DateTime
   status          ContributionStatus @default(ACTIVE)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   payments        Payment[]
+  transactions    Transaction[]      // Add this relation
 }
 
 enum ContributionStatus {
@@ -50,17 +52,18 @@ enum ContributionStatus {
 }
 
 model Payment {
-  id              String    @id @default(cuid())
+  id              String        @id @default(cuid())
   amount          Float
   status          PaymentStatus
   paymentMethod   String?
   transactionId   String?
-  user            User      @relation(fields: [userId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
   userId          String
-  contribution    Contribution @relation(fields: [contributionId], references: [id])
+  contribution    Contribution  @relation(fields: [contributionId], references: [id])
   contributionId  String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transaction     Transaction?  @relation(fields: [transactionId], references: [id])
 }
 
 enum PaymentStatus {
@@ -77,4 +80,45 @@ model Notification {
   user        User      @relation(fields: [userId], references: [id])
   userId      String
   createdAt   DateTime  @default(now())
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// New Transaction model
+model Transaction {
+  id              String            @id @default(cuid())
+  amount          Float
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  description     String?
+  paymentMethod   String?
+  receiptNumber   String?           @unique
+  paymentProof    String?
+  notes           String?
+  user            User              @relation(fields: [userId], references: [id])
+  userId          String
+  contribution    Contribution?     @relation(fields: [contributionId], references: [id])
+  contributionId  String?
+  payments        Payment[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+enum TransactionType {
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
 }

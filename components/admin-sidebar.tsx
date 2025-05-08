@@ -68,14 +68,16 @@ export function AdminSidebar({ className }: { className?: string }) {
           </SidebarTrigger>
         </div>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
+      <SidebarContent className="p-2">
+        <SidebarMenu className="gap-4">
           {routes.map((route) => (
             <SidebarMenuItem key={route.href}>
-              <SidebarMenuButton asChild  isActive={pathname === route.href} tooltip={route.label}>
-                <a href={route.href} className="flex items-center">
-                <route.icon className={`h-5 w-5 ${route.color}`} />
-                <span>{route.label}</span>
+              <SidebarMenuButton asChild  isActive={pathname === route.href} tooltip={route.label} style={{
+                backgroundColor: pathname === route.href ? "rgba(19, 185, 129, 0.1)" : "",
+              }}>
+                <a href={route.href} className="flex items-center ">
+                <route.icon size={30} className={`${route.color}`} />
+                <span className={pathname === route.href ? "text-white" : "text-gray-200"}>{route.label}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>

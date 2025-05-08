@@ -144,7 +144,7 @@ export default async function ContributionDetailPage({ params }: ContributionDet
                 </p>
               </div>
             ) : isActive ? (
-              <PaymentForm contributionId={params.id} />
+              <PaymentForm contributionId={params.id} contributionTitle={contribution.title} />
             ) : (
               <div className="bg-muted p-4 rounded-lg text-center">
                 <p className="font-medium">Program iuran ini sudah tidak aktif</p>

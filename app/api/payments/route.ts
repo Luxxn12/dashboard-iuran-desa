@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
+import { createMidtransTransaction } from "@/lib/midtrans"
 
-// This is a simplified version without actual Midtrans integration
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -31,59 +31,82 @@ export async function POST(request: Request) {
       return new NextResponse("Contribution not found or not active", { status: 404 })
     }
 
-    // Check if user has already paid for this contribution
-    const existingPayment = await prisma.payment.findFirst({
+    // Get user details for the payment
+    const user = await prisma.user.findUnique({
       where: {
-        userId: session.user.id,
-        contributionId,
-        status: "COMPLETED",
+        id: session.user.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
       },
     })
 
-    if (existingPayment) {
-      return new NextResponse("You have already paid for this contribution", { status: 400 })
+    if (!user) {
+      return new NextResponse("User not found", { status: 404 })
     }
 
-    // In a real implementation, we would integrate with Midtrans here
-    // For demo purposes, we'll create a payment record directly
+    // Create a unique order ID
+    const orderId = `ORDER-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 
-    // Create payment record
+    // Create a transaction record
+    const transaction = await prisma.transaction.create({
+      data: {
+        amount,
+        type: "PAYMENT",
+        status: "PENDING",
+        description: `Pembayaran untuk ${contribution.title}`,
+        receiptNumber: orderId,
+        user: {
+          connect: {
+            id: session.user.id,
+          },
+        },
+        contribution: {
+          connect: {
+            id: contributionId,
+          },
+        },
+      },
+    })
+
+    // Create payment record linked to the transaction
     const payment = await prisma.payment.create({
       data: {
         amount,
-        status: "COMPLETED", // In real implementation, this would be PENDING until confirmed by Midtrans
-        paymentMethod: "Demo Payment", // In real implementation, this would be set by Midtrans
+        status: "PENDING",
+        paymentMethod: "Midtrans",
         userId: session.user.id,
         contributionId,
-      },
-    })
-
-    // Update contribution collected amount
-    await prisma.contribution.update({
-      where: {
-        id: contributionId,
-      },
-      data: {
-        collectedAmount: {
-          increment: amount,
-        },
+        transactionId: transaction.id,
       },
     })
 
     // Create notification for the user
     await prisma.notification.create({
       data: {
-        title: "Pembayaran Berhasil",
-        message: `Pembayaran Anda sebesar Rp ${amount.toLocaleString("id-ID")} untuk program ${contribution.title} telah berhasil.`,
+        title: "Pembayaran Diproses",
+        message: `Pembayaran Anda sebesar Rp ${amount.toLocaleString("id-ID")} untuk program ${contribution.title} sedang diproses.`,
         userId: session.user.id,
       },
     })
 
-    // In a real implementation, we would return a redirect URL to Midtrans payment page
+    // Create Midtrans transaction
+    const midtransResponse = await createMidtransTransaction({
+      orderId,
+      amount,
+      customerName: user.name || "User",
+      customerEmail: user.email || "user@example.com",
+      description: `Pembayaran untuk ${contribution.title}`,
+    })
+
     return NextResponse.json({
       success: true,
       payment,
-      // redirectUrl: "https://midtrans-payment-page.com/example",
+      transaction,
+      snapToken: midtransResponse.token,
+      redirectUrl: midtransResponse.redirect_url,
     })
   } catch (error) {
     console.error("[PAYMENTS_POST]", error)
