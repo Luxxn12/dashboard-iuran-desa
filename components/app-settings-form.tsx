@@ -31,7 +31,7 @@ export function AppSettingsForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      villageName: "Desa Sukamaju",
+      villageName: "Desa Kalirejo",
       allowRegistration: true,
       autoApprovePayments: false,
       notificationEnabled: true,

@@ -34,7 +34,7 @@ export default function RegisterPage() {
               &ldquo;Aplikasi ini membantu kami mengelola iuran desa dengan
               lebih transparan dan efisien.&rdquo;
             </p>
-            <footer className="text-sm">Kepala Desa Sukamaju</footer>
+            <footer className="text-sm">Kepala Desa Kalirejo</footer>
           </blockquote>
         </div>
       </div>
