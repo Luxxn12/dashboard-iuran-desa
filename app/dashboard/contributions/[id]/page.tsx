@@ -41,9 +41,24 @@ export default async function ContributionDetailPage({ params }: ContributionDet
     where: {
       userId: session.user.id,
       contributionId: params.id,
-      status: "COMPLETED",
+      status: {
+        in: ["COMPLETED", "PENDING"],
+      },
     },
   })
+
+  // Also check if there's a pending transaction
+  const pendingTransaction = existingPayment
+    ? await prisma.transaction.findFirst({
+        where: {
+          id: existingPayment.transactionId || "",
+          status: "PENDING",
+        },
+      })
+    : null
+
+  const hasCompletedPayment = existingPayment?.status === "COMPLETED"
+  const hasPendingPayment = existingPayment?.status === "PENDING" && pendingTransaction
 
   const progress = (contribution.collectedAmount / contribution.targetAmount) * 100
   const isExpired = new Date(contribution.endDate) < new Date()
@@ -76,7 +91,8 @@ export default async function ContributionDetailPage({ params }: ContributionDet
                 ? "Selesai"
                 : "Dibatalkan"}
           </Badge>
-          {existingPayment && <Badge variant="outline">Sudah Dibayar</Badge>}
+          {hasCompletedPayment && <Badge variant="outline">Sudah Dibayar</Badge>}
+          {hasPendingPayment && <Badge variant="outline">Pembayaran Tertunda</Badge>}
         </div>
       </div>
 
@@ -127,20 +143,30 @@ export default async function ContributionDetailPage({ params }: ContributionDet
           <CardHeader>
             <CardTitle>Pembayaran Iuran</CardTitle>
             <CardDescription>
-              {existingPayment
+              {hasCompletedPayment
                 ? "Anda sudah membayar iuran untuk program ini"
-                : isActive
-                  ? "Silakan lakukan pembayaran iuran untuk program ini"
-                  : "Program iuran ini sudah tidak aktif"}
+                : hasPendingPayment
+                  ? "Anda memiliki pembayaran tertunda untuk program ini"
+                  : isActive
+                    ? "Silakan lakukan pembayaran iuran untuk program ini"
+                    : "Program iuran ini sudah tidak aktif"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {existingPayment ? (
-              <div className="bg-muted p-4 rounded-lg text-center">
-                <p className="font-medium">Terima kasih atas kontribusi Anda!</p>
-                <p className="text-muted-foreground mt-1">
+            {hasCompletedPayment ? (
+              <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg text-center">
+                <p className="font-medium text-green-800 dark:text-green-300">Terima kasih atas kontribusi Anda!</p>
+                <p className="text-green-700 dark:text-green-400 mt-1">
                   Anda telah membayar iuran sebesar Rp {existingPayment.amount.toLocaleString("id-ID")} pada{" "}
                   {new Date(existingPayment.createdAt).toLocaleDateString("id-ID")}
+                </p>
+              </div>
+            ) : hasPendingPayment ? (
+              <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg text-center">
+                <p className="font-medium text-yellow-800 dark:text-yellow-300">Pembayaran Anda sedang diproses</p>
+                <p className="text-yellow-700 dark:text-yellow-400 mt-1">
+                  Anda memiliki pembayaran tertunda sebesar Rp {existingPayment?.amount.toLocaleString("id-ID")}.
+                  Silakan selesaikan pembayaran Anda.
                 </p>
               </div>
             ) : isActive ? (

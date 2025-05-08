@@ -31,6 +31,35 @@ export async function POST(request: Request) {
       return new NextResponse("Contribution not found or not active", { status: 404 })
     }
 
+    // Check if user has already paid for this contribution
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
+        userId: session.user.id,
+        contributionId,
+        status: {
+          in: ["COMPLETED", "PENDING"],
+        },
+      },
+    })
+
+    if (existingPayment) {
+      if (existingPayment.status === "COMPLETED") {
+        return new NextResponse("You have already paid for this contribution", { status: 400 })
+      } else {
+        // Check if there's a pending transaction
+        const pendingTransaction = await prisma.transaction.findFirst({
+          where: {
+            id: existingPayment.transactionId || "",
+            status: "PENDING",
+          },
+        })
+
+        if (pendingTransaction) {
+          return new NextResponse("You have a pending payment for this contribution", { status: 400 })
+        }
+      }
+    }
+
     // Get user details for the payment
     const user = await prisma.user.findUnique({
       where: {
