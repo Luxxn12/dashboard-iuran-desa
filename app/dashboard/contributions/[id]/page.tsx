@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { PaymentForm } from "@/components/payment-form"
 import { ResumePaymentButton } from "@/components/resume-payment-button"
+import { ChevronLeft } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Detail Program Iuran - Dashboard",
@@ -61,8 +62,8 @@ export default async function ContributionDetailPage({ params }: ContributionDet
   return (
     <div className="container py-6">
       <div className="mb-6">
-        <Link href="/dashboard/contributions" className="text-sm text-muted-foreground hover:underline">
-          &larr; Kembali ke daftar program
+        <Link href="/dashboard/contributions" className="flex items-center text-md text-muted-foreground hover:underline">
+        <ChevronLeft className="h-5 w-5" /> Kembali
         </Link>
         <h1 className="text-2xl font-bold mt-2">{contribution.title}</h1>
         <div className="flex items-center gap-2 mt-1">
