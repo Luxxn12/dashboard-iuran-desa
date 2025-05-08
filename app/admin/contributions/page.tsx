@@ -6,15 +6,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
+import { Pagination } from "@/components/pagination"
 
 export const metadata: Metadata = {
   title: "Program Iuran - Admin Dashboard",
   description: "Kelola program iuran desa",
 }
 
-export default async function ContributionsPage() {
+export default async function ContributionsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; perPage?: string }
+}) {
+  // Parse pagination parameters
+  const currentPage = Number(searchParams.page) || 1
+  const pageSize = Number(searchParams.perPage) || 10
+
+  // Calculate skip value for pagination
+  const skip = (currentPage - 1) * pageSize
+
+  // Get total count for pagination
+  const totalContributions = await prisma.contribution.count()
+
+  // Get paginated contributions
   const contributions = await prisma.contribution.findMany({
     orderBy: { createdAt: "desc" },
+    skip,
+    take: pageSize,
   })
 
   return (
@@ -112,6 +130,8 @@ export default async function ContributionsPage() {
               )}
             </TableBody>
           </Table>
+
+          <Pagination totalItems={totalContributions} pageSize={pageSize} currentPage={currentPage} />
         </CardContent>
       </Card>
     </div>

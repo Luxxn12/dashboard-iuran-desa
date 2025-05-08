@@ -5,13 +5,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Edit, Eye, UserPlus } from "lucide-react"
+import { Pagination } from "@/components/pagination"
 
 export const metadata: Metadata = {
   title: "Manajemen Warga - Admin Dashboard",
   description: "Kelola data warga desa",
 }
 
-export default async function ResidentsPage() {
+export default async function ResidentsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; perPage?: string }
+}) {
+  // Parse pagination parameters
+  const currentPage = Number(searchParams.page) || 1
+  const pageSize = Number(searchParams.perPage) || 10
+
+  // Calculate skip value for pagination
+  const skip = (currentPage - 1) * pageSize
+
+  // Get total count for pagination
+  const totalResidents = await prisma.user.count({
+    where: {
+      role: "RESIDENT",
+    },
+  })
+
+  // Get paginated residents
   const residents = await prisma.user.findMany({
     where: {
       role: "RESIDENT",
@@ -19,6 +40,8 @@ export default async function ResidentsPage() {
     orderBy: {
       name: "asc",
     },
+    skip,
+    take: pageSize,
   })
 
   // Get payment statistics for each resident
@@ -55,23 +78,7 @@ export default async function ResidentsPage() {
         <h2 className="text-3xl font-bold tracking-tight">Manajemen Warga</h2>
         <Link href="/admin/users/create">
           <Button>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mr-2 h-4 w-4"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" x2="19" y1="8" y2="14" />
-              <line x1="22" x2="16" y1="11" y2="11" />
-            </svg>
+            <UserPlus className="mr-2 h-4 w-4" />
             Tambah Pengguna
           </Button>
         </Link>
@@ -108,11 +115,18 @@ export default async function ResidentsPage() {
                     </TableCell>
                     <TableCell>Rp {resident.totalPaid.toLocaleString("id-ID")}</TableCell>
                     <TableCell>
-                      <Link href={`/admin/residents/${resident.id}`}>
-                        <Button variant="outline" size="sm">
-                          Detail
-                        </Button>
-                      </Link>
+                      <div className="flex gap-2">
+                        <Link href={`/admin/residents/${resident.id}`}>
+                          <Button variant="outline" size="icon" title="Lihat Detail">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/admin/residents/${resident.id}/edit`}>
+                          <Button variant="outline" size="icon" title="Edit">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -125,6 +139,8 @@ export default async function ResidentsPage() {
               )}
             </TableBody>
           </Table>
+
+          <Pagination totalItems={totalResidents} pageSize={pageSize} currentPage={currentPage} />
         </CardContent>
       </Card>
     </div>

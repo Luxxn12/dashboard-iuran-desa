@@ -1,18 +1,17 @@
 "use client"
-import { useRouter, useSearchParams } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
+
+import * as React from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { CalendarIcon, FilterIcon, X } from "lucide-react"
 import { format } from "date-fns"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { CalendarIcon, SearchIcon, X } from "lucide-react"
+import { id } from "date-fns/locale"
+import type { DateRange } from "react-day-picker"
 
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Card } from "@/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { Badge } from "@/components/ui/badge"
 
 interface TransactionFilterProps {
   contributions: {
@@ -24,13 +23,6 @@ interface TransactionFilterProps {
   selectedDateRange?: string
 }
 
-const formSchema = z.object({
-  contribution: z.string().optional(),
-  status: z.string().optional(),
-  startDate: z.date().optional(),
-  endDate: z.date().optional(),
-})
-
 export function TransactionFilter({
   contributions,
   selectedContribution,
@@ -38,171 +30,171 @@ export function TransactionFilter({
   selectedDateRange,
 }: TransactionFilterProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      contribution: selectedContribution || "",
-      status: selectedStatus || "",
-      startDate: selectedDateRange ? new Date(selectedDateRange.split("_")[0]) : undefined,
-      endDate: selectedDateRange ? new Date(selectedDateRange.split("_")[1]) : undefined,
-    },
+  const [date, setDate] = React.useState<DateRange | undefined>(() => {
+    if (selectedDateRange) {
+      const [from, to] = selectedDateRange.split("_")
+      return {
+        from: new Date(from),
+        to: new Date(to),
+      }
+    }
+    return undefined
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  // Count active filters
+  const activeFilters = [
+    selectedContribution && selectedContribution !== "ALL",
+    selectedStatus && selectedStatus !== "ALL",
+    selectedDateRange,
+  ].filter(Boolean).length
+
+  const updateSearchParams = (key: string, value: string | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    // Reset to page 1 when filters change
+    params.set("page", "1")
+
+    if (value === null || value === "ALL") {
+      params.delete(key)
+    } else {
+      params.set(key, value)
+    }
+
+    return params.toString()
+  }
+
+  const handleContributionChange = (value: string) => {
+    const queryString = updateSearchParams("contribution", value === "ALL" ? null : value)
+    router.push(`${pathname}?${queryString}`)
+  }
+
+  const handleStatusChange = (value: string) => {
+    const queryString = updateSearchParams("status", value === "ALL" ? null : value)
+    router.push(`${pathname}?${queryString}`)
+  }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDate(range)
+    const params = new URLSearchParams(searchParams.toString())
+
+    // Reset to page 1 when filters change
+    params.set("page", "1")
+
+    if (range?.from && range?.to) {
+      const fromDate = format(range.from, "yyyy-MM-dd")
+      const toDate = format(range.to, "yyyy-MM-dd")
+      params.set("dateRange", `${fromDate}_${toDate}`)
+    } else {
+      params.delete("dateRange")
+    }
+
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  const clearFilters = () => {
+    // Preserve only pagination parameters
     const params = new URLSearchParams()
-
-    if (values.contribution) {
-      params.set("contribution", values.contribution)
+    params.set("page", "1")
+    if (searchParams.has("perPage")) {
+      params.set("perPage", searchParams.get("perPage")!)
     }
-
-    if (values.status) {
-      params.set("status", values.status)
-    }
-
-    if (values.startDate && values.endDate) {
-      params.set(
-        "dateRange",
-        `${values.startDate.toISOString().split("T")[0]}_${values.endDate.toISOString().split("T")[0]}`,
-      )
-    }
-
-    router.push(`/admin/transactions?${params.toString()}`)
+    router.push(`${pathname}?${params.toString()}`)
   }
-
-  function resetFilters() {
-    router.push("/admin/transactions")
-    form.reset({
-      contribution: "",
-      status: "",
-      startDate: undefined,
-      endDate: undefined,
-    })
-  }
-
-  const hasFilters = selectedContribution || selectedStatus || selectedDateRange
 
   return (
-    <Card className="p-4">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-4">
-          <FormField
-            control={form.control}
-            name="contribution"
-            render={({ field }) => (
-              <FormItem className="flex-1 min-w-[200px]">
-                <FormLabel>Program Iuran</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Semua program iuran" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ALL">Semua program iuran</SelectItem>
-                    {contributions.map((contribution) => (
-                      <SelectItem key={contribution.id} value={contribution.id}>
-                        {contribution.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem className="flex-1 min-w-[200px]">
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Semua status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ALL">Semua status</SelectItem>
-                    <SelectItem value="PENDING">Menunggu</SelectItem>
-                    <SelectItem value="COMPLETED">Berhasil</SelectItem>
-                    <SelectItem value="FAILED">Gagal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            )}
-          />
-
-          <div className="flex gap-4">
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Dari Tanggal</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        >
-                          {field.value ? format(field.value, "dd/MM/yyyy") : <span>Pilih tanggal</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="endDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Sampai Tanggal</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        >
-                          {field.value ? format(field.value, "dd/MM/yyyy") : <span>Pilih tanggal</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="flex gap-2 ml-auto">
-            {hasFilters && (
-              <Button type="button" variant="outline" onClick={resetFilters}>
-                <X className="mr-2 h-4 w-4" />
-                Reset
+    <div className="bg-card border rounded-lg p-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+        <h3 className="text-lg font-medium flex items-center gap-2">
+          <FilterIcon className="h-5 w-5 text-muted-foreground" />
+          Filter Transaksi
+          {activeFilters > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              {activeFilters} aktif
+            </Badge>
+          )}
+        </h3>
+        {activeFilters > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="h-8 gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+            Reset Filter
+          </Button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm font-medium mb-1 block">Program Iuran</label>
+          <Select value={selectedContribution || "ALL"} onValueChange={handleContributionChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Semua Program" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua Program</SelectItem>
+              {contributions.map((contribution) => (
+                <SelectItem key={contribution.id} value={contribution.id}>
+                  {contribution.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Status</label>
+          <Select value={selectedStatus || "ALL"} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Semua Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua Status</SelectItem>
+              <SelectItem value="PENDING">Menunggu</SelectItem>
+              <SelectItem value="PROCESSING">Diproses</SelectItem>
+              <SelectItem value="COMPLETED">Selesai</SelectItem>
+              <SelectItem value="FAILED">Gagal</SelectItem>
+              <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Rentang Tanggal</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {date?.from ? (
+                  date.to ? (
+                    <>
+                      {format(date.from, "dd MMM yyyy", { locale: id })} -{" "}
+                      {format(date.to, "dd MMM yyyy", { locale: id })}
+                    </>
+                  ) : (
+                    format(date.from, "dd MMM yyyy", { locale: id })
+                  )
+                ) : (
+                  <span>Pilih tanggal</span>
+                )}
               </Button>
-            )}
-            <Button type="submit">
-              <SearchIcon className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={date?.from}
+                selected={date}
+                onSelect={handleDateRangeChange}
+                numberOfMonths={2}
+                locale={id}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </div>
   )
 }
