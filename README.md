@@ -2,7 +2,7 @@
 
 # IURAN DESA APPS
 
-  <img src="./src/assets/logo.png" width="300" height="300" />
+![screenshot](/public/1.webp)
 
   # 🏘️ Iuran Desa Apps
   </div>
@@ -40,11 +40,11 @@
 
 ## Screenshot Hasil Aplikasi
 
-![screenshot](./src/assets/1.webp)
-![screenshot](./src/assets/2.webp)
-![screenshot](./src/assets/hp1.webp)
-![screenshot](./src/assets/hp2.webp)
-![screenshot](./src/assets/hp3.webp)
+![screenshot](/public/1.webp)
+![screenshot](/public/2.webp)
+![screenshot](/public/hp1.webp)
+![screenshot](/public/hp2.webp)
+![screenshot](/public/hp3.webp)
 
 
 
