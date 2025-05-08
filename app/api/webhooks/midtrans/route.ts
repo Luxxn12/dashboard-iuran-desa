@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 
-// This would be a real webhook handler for Midtrans notifications
+// This is a webhook handler for Midtrans notifications
 export async function POST(request: Request) {
   try {
     const body = await request.json()

@@ -3,24 +3,37 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== "ADMIN") {
+    if (!session) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
+    const { id } = params
     const body = await request.json()
     const { status } = body
 
-    if (!status || !["COMPLETED", "FAILED"].includes(status)) {
+    if (!status) {
+      return new NextResponse("Missing status field", { status: 400 })
+    }
+
+    // Validate status
+    const validStatuses = ["PENDING", "PROCESSING", "COMPLETED", "FAILED", "CANCELLED"]
+    if (!validStatuses.includes(status)) {
       return new NextResponse("Invalid status", { status: 400 })
     }
 
     // Find the transaction
-    const transaction = await prisma.payment.findUnique({
-      where: { id: params.id },
+    const transaction = await prisma.transaction.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        user: true,
+        contribution: true,
+      },
     })
 
     if (!transaction) {
@@ -28,15 +41,32 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     // Update transaction status
-    const updatedTransaction = await prisma.payment.update({
-      where: { id: params.id },
-      data: { status },
+    const updatedTransaction = await prisma.transaction.update({
+      where: {
+        id,
+      },
+      data: {
+        status,
+      },
     })
 
-    // If the transaction is marked as completed, update the contribution collected amount
-    if (status === "COMPLETED" && transaction.status !== "COMPLETED") {
+    // Update payment status
+    await prisma.payment.updateMany({
+      where: {
+        transactionId: id,
+      },
+      data: {
+        status:
+          status === "COMPLETED" ? "COMPLETED" : status === "FAILED" || status === "CANCELLED" ? "FAILED" : "PENDING",
+      },
+    })
+
+    // If payment is completed, update contribution collected amount
+    if (status === "COMPLETED" && transaction.contribution) {
       await prisma.contribution.update({
-        where: { id: transaction.contributionId },
+        where: {
+          id: transaction.contribution.id,
+        },
         data: {
           collectedAmount: {
             increment: transaction.amount,
@@ -48,36 +78,27 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       await prisma.notification.create({
         data: {
           title: "Pembayaran Berhasil",
-          message: `Pembayaran Anda sebesar Rp ${transaction.amount.toLocaleString("id-ID")} telah dikonfirmasi.`,
+          message: `Pembayaran Anda sebesar Rp ${transaction.amount.toLocaleString("id-ID")} telah berhasil.`,
           userId: transaction.userId,
         },
       })
-    }
-
-    // If the transaction is marked as failed and was previously completed, update the contribution amount
-    if (status === "FAILED" && transaction.status === "COMPLETED") {
-      await prisma.contribution.update({
-        where: { id: transaction.contributionId },
-        data: {
-          collectedAmount: {
-            decrement: transaction.amount,
-          },
-        },
-      })
-
-      // Create notification for the user
+    } else if (status === "FAILED" || status === "CANCELLED") {
+      // Create notification for failed payment
       await prisma.notification.create({
         data: {
           title: "Pembayaran Gagal",
-          message: `Mohon maaf, pembayaran Anda sebesar Rp ${transaction.amount.toLocaleString("id-ID")} telah ditandai gagal.`,
+          message: `Pembayaran Anda sebesar Rp ${transaction.amount.toLocaleString("id-ID")} gagal diproses.`,
           userId: transaction.userId,
         },
       })
     }
 
-    return NextResponse.json(updatedTransaction)
+    return NextResponse.json({
+      success: true,
+      transaction: updatedTransaction,
+    })
   } catch (error) {
-    console.error("[TRANSACTION_STATUS_PUT]", error)
+    console.error("[TRANSACTION_STATUS_PATCH]", error)
     return new NextResponse("Internal error", { status: 500 })
   }
 }
