@@ -1,8 +1,18 @@
-"use client"
+"use client";
 
-import { usePathname } from "next/navigation"
-import { signOut } from "next-auth/react"
-import { BarChart3, CreditCard, Home, Settings, Bell, Users, LogOut, FileText, Menu } from "lucide-react"
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
+import {
+  BarChart3,
+  CreditCard,
+  Home,
+  Settings,
+  Bell,
+  Users,
+  LogOut,
+  FileText,
+  Menu,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -13,7 +23,8 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import Link from "next/link";
 
 const routes = [
   {
@@ -52,10 +63,10 @@ const routes = [
     href: "/admin/settings",
     color: "text-gray-500",
   },
-]
+];
 
 export function AdminSidebar({ className }: { className?: string }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <Sidebar className={className} collapsible="icon">
@@ -72,13 +83,25 @@ export function AdminSidebar({ className }: { className?: string }) {
         <SidebarMenu className="gap-4">
           {routes.map((route) => (
             <SidebarMenuItem key={route.href}>
-              <SidebarMenuButton asChild  isActive={pathname === route.href} tooltip={route.label} style={{
-                backgroundColor: pathname === route.href ? "rgba(19, 185, 129, 0.1)" : "",
-              }}>
-                <a href={route.href} className="flex items-center ">
-                <route.icon size={30} className={`${route.color}`} />
-                <span className={pathname === route.href ? "text-white" : "text-gray-200"}>{route.label}</span>
-                </a>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === route.href}
+                tooltip={route.label}
+                style={{
+                  backgroundColor:
+                    pathname === route.href ? "rgba(19, 185, 129, 0.1)" : "",
+                }}
+              >
+                <Link href={route.href} className="flex items-center">
+                  <route.icon size={30} className={`${route.color}`} />
+                  <span
+                    className={
+                      pathname === route.href ? "text-white" : "text-gray-200"
+                    }
+                  >
+                    {route.label}
+                  </span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -87,7 +110,10 @@ export function AdminSidebar({ className }: { className?: string }) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => signOut({ callbackUrl: "/login" })} tooltip="Keluar">
+            <SidebarMenuButton
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              tooltip="Keluar"
+            >
               <LogOut className="h-5 w-5 text-red-500" />
               <span>Keluar</span>
             </SidebarMenuButton>
@@ -95,5 +121,5 @@ export function AdminSidebar({ className }: { className?: string }) {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
